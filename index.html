@@ -1,0 +1,2305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Valuation Report</title>
+    
+    <!-- PDF Generation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        * { box-sizing: border-box; } /* Prevents table overflow */
+        
+        body {
+            font-family: 'Book Antiqua', Palatino, serif;
+            background-color: #525659;
+            margin: 0;
+            padding: 20px;
+        }
+        /* Vertical spacing for the cover page */
+        .cover-page {
+            justify-content: flex-start; /* Start from top */
+            height: 297mm;
+        }
+
+        .cover-page .sheet-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .cover-title-container {
+            margin-top: 20%; /* Pushes title down to upper-middle */
+            margin-bottom: auto; /* Pushes everything below it to the bottom */
+        }
+
+        .cover-tables-container {
+            margin-bottom: 40px; /* Space before footer */
+        }
+        
+        /* --- SHEET STRUCTURE --- */
+        .report-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .sheet {
+            width: 210mm;
+            height: 297mm; /* Standard A4 for screen viewing */
+            background-color: white;
+            padding: 15mm;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- PDF GENERATION OVERRIDES --- */
+        .report-wrapper.pdf-mode {
+            gap: 0 !important;
+        }
+
+        .report-wrapper.pdf-mode .sheet {
+            height: 296mm !important; 
+            width: 210mm !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            border: none !important;
+            page-break-after: always !important;
+            page-break-inside: avoid !important;
+        }
+
+        .report-wrapper.pdf-mode .sheet:last-child {
+            page-break-after: auto !important;
+        }
+
+        /* --- HEADER & FOOTER --- */
+        .report-header-img {
+            width: 100%;
+            height: auto;
+            max-height: 100px;
+            object-fit: contain;
+            display: block;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+
+        .report-footer-img {
+            width: 100%;
+            height: auto;
+            max-height: 80px;
+            object-fit: contain;
+            display: block;
+            margin-top: auto; 
+            padding-top: 10px;
+            flex-shrink: 0;
+        }
+
+        /* --- CONTENT STYLING --- */
+        .sheet-content {
+            flex-grow: 1;
+            overflow: visible;
+        }
+
+        h1.report-title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            color: #000;
+        }
+        
+        h2 {
+            font-size: 16px;
+            text-decoration: underline;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            color: #000;
+        }
+        
+        h3 {
+            font-size: 14px;
+            font-weight: bold;
+            color: #000;
+        }
+        
+        p {
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        
+        table, th, td {
+            border: 1px solid #000;
+        }
+        th, td {
+            padding: 2px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        
+        th {
+            font-weight: bold;
+            text-align: center;
+        }
+        /* Input Styles */
+        input[type="text"], 
+        input[type="date"], 
+        input[type="time"], 
+        input[type="number"], 
+        textarea, 
+        select {
+            width: 100%;
+            padding: 2px;
+            border: 1px solid #ccc;
+            border-radius: 2px;
+            font-family: 'Book Antiqua', 'Palatino Linotype', 'Palatino', serif;
+            font-size: 12px;
+            background-color: #fff;
+            outline: none;
+        }
+
+        /* Force font for Date and Time internal fields (Chrome/Edge/Safari) */
+        input[type="date"]::-webkit-datetime-edit,
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-datetime-edit,
+        input[type="time"]::-webkit-datetime-edit-fields-wrapper,
+        input[type="time"]::-webkit-datetime-edit-text,
+        input[type="time"]::-webkit-datetime-edit-minute,
+        input[type="time"]::-webkit-datetime-edit-hour,
+        input[type="time"]::-webkit-datetime-edit-ampm-block {
+            font-family: 'Book Antiqua', 'Palatino Linotype', 'Palatino', serif;
+            font-size: 12px;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: #2196F3;
+            outline: none;
+            background-color: #f0f8ff;
+        }
+        
+        textarea {
+            min-height: 40px;
+            resize: vertical;
+        }
+        
+        .header-section table th {
+            width: 30%;
+            text-align: left;
+        }
+        
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 10px 0;
+        }
+        
+        .address-box {
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 12px;
+        }
+        
+        .formula {
+            font-style: italic;
+            color: #444;
+            font-size: 11px;
+        }
+        
+        .note {
+            margin: 10px 0;
+            font-size: 12px;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        /* --- PHOTO PAGE STYLES --- */
+        .photo-page-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-evenly; 
+            height: 100%;
+            padding: 10px 0;
+        }
+
+        .photo-slot {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .photo-frame {
+            width: 100%;
+            height: 90mm; /* Fixed height */
+            border: 2px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            overflow: hidden;
+            margin-bottom: 5px;
+            position: relative; /* Context for absolute button */
+        }
+
+        .photo-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .add-photo-placeholder {
+            width: 100%;
+            height: 90mm;
+            border: 3px dashed #ccc;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #888;
+            background-color: #fcfcfc;
+            transition: 0.3s;
+            margin-bottom: 25px; 
+        }
+
+        .add-photo-placeholder:hover {
+            border-color: #3498db;
+            color: #3498db;
+            background-color: #f0f8ff;
+        }
+
+        .add-photo-placeholder i {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        
+        /* --- CUSTOM ANNEXURE IV STYLES --- */
+        /* Ensures Annexure IV always starts on a fresh page */
+        .sheet-annexure4 {
+            break-before: page; /* Starts Annexure IV on a new page */
+        }
+
+        /* Makes the Annexure III header look like a button */
+        .clickable-header {
+            cursor: pointer;
+            transition: background 0.3s;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .clickable-header:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        .qr-special-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%; /* Use full width of the sheet */
+            height: 100%;
+            padding-top: 40px;
+        }
+
+        .qr-instructions {
+            text-align: left;
+            width: 100%; /* Changed from 80% to 100% */
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        /* Add Slot Button for Annexure III */
+        .add-slot-btn-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .qr-frame-custom,.sheet-annexure4 .add-photo-placeholder { 
+            width: 250px !important;  /* Fixed width for a square look */
+            height: 250px !important; /* Fixed height */
+            margin: 0 auto 25px auto;
+        }
+
+        .add-slot-btn {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: inherit;
+        }
+
+        .add-slot-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        /* --- CHECK BOX FOR ROW --- */
+        /* Standard grid for 4 options */
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Specific grid for 5 options (e.g., Fuel or HID Lights) */
+        .checkbox-group.five-cols {
+            grid-template-columns: repeat(5, 1fr);
+        }
+
+        /* Specific grid for 2 options */
+        .checkbox-group.two-cols {
+            grid-template-columns: repeat(2, 1fr);
+            width: 50%; 
+        }
+
+        /* The box before the text */
+        .square {
+            width: 14px;
+            height: 14px;
+            border: 1px solid #000;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        /* When checked, add a tick mark */
+        .check-item.checked .square::after {
+            content: "✓";
+            color: #000;
+        }
+        
+        /* Ensure colors are black for printing */
+        @media print {
+            .square {
+                border: 1px solid #000 !important;
+                -webkit-print-color-adjust: exact;
+            }
+        }
+                    
+
+        /* DELETE BUTTON STYLES FIXED */
+        .delete-photo-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #ff4444;
+            color: white;
+            border: 2px solid white; /* Adding border for visibility on dark images */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 100; /* Ensure it's on top */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+            outline: none;
+        }
+
+        .delete-photo-btn:hover {
+            transform: scale(1.1);
+            background-color: #cc0000;
+        }
+
+        .photo-title {
+            width: 100%;
+            text-align: center !important;
+            font-family: 'Book Antiqua', 'Palatino Linotype', 'Palatino', serif;
+            font-size: 14px !important;
+            border: none !important;
+            border-bottom: 1px solid transparent !important;
+            padding: 5px !important;
+            background: transparent !important;
+            outline: none;
+        }
+        
+        .photo-title:focus {
+            border-bottom: 1px dashed #ccc !important;
+        }
+        
+        .annexure-header {
+            width: 100%;
+            text-align: left;
+            font-style: italic;
+            text-decoration: underline;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        /* Hide "Add Photo" placeholder in print/PDF mode */
+        .report-wrapper.pdf-mode .add-photo-placeholder {
+            display: none !important;
+        }
+        
+        /* Hide delete buttons in PDF mode */
+        .report-wrapper.pdf-mode .delete-photo-btn {
+            display: none !important;
+        }
+        /* Adjust the text width with the input text */
+        .auto-grow {
+            display: inline; /* Changed from inline-block to allow wrapping */
+            border: none;
+            outline: none;
+            font: inherit;
+            padding: 0 3px;
+            min-width: 2px;
+            background: transparent;
+            white-space: pre-wrap; /* Essential: keeps spaces and allows wrapping */
+            word-wrap: break-word;
+        }
+        
+        /* Optional: This adds the placeholder back since spans don't have one naturally */
+        .auto-grow:focus {
+            border-bottom: 1px solid #000; /* Line only appears when typing */
+        }
+        
+        .photo-container-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-evenly;
+            height: 100%;
+            width: 100%;
+        }
+        
+        /* --- PREVIEW MODE --- */
+        body.preview-mode input, 
+        body.preview-mode textarea, 
+        body.preview-mode select {
+            border: none;
+            background: transparent;
+            padding: 0;
+            resize: none;
+            appearance: none;
+            -webkit-appearance: none;
+            font-weight: bold;
+            color: #000;
+        }
+        
+        body.preview-mode ::placeholder {
+            color: transparent;
+        }
+
+        /* --- CONTROL BAR --- */
+        .control-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #2c3e50;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+        }
+        
+        .btn-preview { background-color: #3498db; }
+        .btn-download { background-color: #27ae60; }
+        .btn-clear { background-color: #e74c3c; }
+        .btn-edit { background-color: #f39c12; display: none; }
+
+        /* --- PRINT STYLES --- */
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+            }
+            .control-bar { display: none; }
+            .add-photo-placeholder { display: none; }
+            .delete-photo-btn { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hidden Input for File Upload (This part mainly handle picture upload)--->
+    <input type="file" id="image-uploader" multiple accept="image/png, image/jpeg, image/jpg" style="display: none;">
+    <input type="file" id="image-uploader-4" multiple accept="image/png, image/jpeg, image/jpg" style="display: none;"> 
+    
+    <!-- WRAPPER FOR ALL SHEETS -->
+    <div class="report-wrapper" id="report-content">
+
+        <!-- ================= SHEET 1 ================= -->
+        <div class="sheet cover-page">
+            <img src="AMK Header.png" class="report-header-img" alt="Header" crossorigin="anonymous">
+    
+            <div class="sheet-content">
+                <div class="cover-title-container">
+                    <h1 class="report-title">INSPECTION & VALUATION REPORT OF <br> USED/PRE-OWNED VEHICLE</h1>
+                </div>
+        
+                <div class="cover-tables-container">
+                    <div class="header-section">
+                        <table style="border: none; border-collapse: collapse;">
+                            <tr>
+                                <th style="width: 40%;">Reference Account Name</th>
+                                <td style="width: 10px">:</td>
+                                <td><input type="text" placeholder="Enter reference account name"></td>
+                            </tr>
+                            <tr>
+                                <th>File Reference Number</th>
+                                <td>:</td>
+                                <td><input type="text" placeholder="Enter reference number"></td>
+                            </tr>
+                            <tr>
+                                <th>Referred By</th>
+                                <td>:</td>
+                                <td><input type="text" placeholder="Enter reference bank name"></td>
+                            </tr>
+                            <tr>
+                                <th>Date of Inspection</th>
+                                <td>:</td>
+                                <td><input type="date"></td>
+                            </tr>
+                        </table>
+                    </div>
+            
+                    <div class="two-column" style="margin-top: 20px;">
+                        <div class="address-box">
+                            <h3>Submitted by:</h3>
+                            <p><strong>AMK Associates Limited</strong></p>
+                            <p>68, Khilgaon Chowdhurypara (4th floor)</p>
+                            <p>DIT Road, Rampura, Dhaka-1219</p>
+                            <p>E-mail: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f3929e989280809c909a928796809197b3949e929a9fdd909c9e">[email&#160;protected]</a></p>
+                            <p>Website: www.amkassociatesltd.com</p>
+                            <p>Contact: +88 01841-132714</p>
+                        </div>
+                        <div class="address-box">
+                            <h3>Submitted to:</h3>
+                            <select id="select-recipient" onchange="updateRecipientDetails()" style="font-weight: bold; margin-bottom: 5px; width: 100%; padding: 5px;">
+                                <option value="" disabled selected>Select a Recipient</option>
+                                <option value="The Manager" data-address="BRAC Bank PLC.&#10;Anik Tower, 220/B&#10;Bir Uttam Mir Shawkat Sarak&#10;Tejgaon, Gulshan Link Road, Tejgaon, Dhaka">The Manager</option>
+                                <option value="Mr. S. M. Mamun Khandaker" data-address="Officer, Credit Initiation & Processing&#10;Policy, Compliance & Analytics, Credit & Collection&#10;The City Bank PLC.&#10;Head Office&#10;PALMAL Tower (16th Floor), House-55&#10;Gulshan Avenue, Gulshan-1, Dhaka-1212">Mr. S. M. Mamun Khandaker</option>
+                                <option value="Mr. Md. Motiur Rahman" data-address="Head&#10;Retail Credit Documentation&#10;Eastern Bank PLC.&#10;Z. N Tower (5th Floor)&#10;Bir Uttam Mir Shawkat Sarak&#10;House#2, Road#8, Gulshan-01, Dhaka">Mr. Md. Motiur Rahman</option>
+                            </select>
+                            <textarea id="input-recipient-address" placeholder="Designation&#10;Bank Name&#10;Address Line 1&#10;Address Line 2&#10;Contact Info" oninput="syncRecipientData()" style="height: 100px; width: 100%;"></textarea>
+                        </div>
+                        <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+                            function updateRecipientDetails() {
+                                const dropdown = document.getElementById('select-recipient');
+                                const addressArea = document.getElementById('input-recipient-address');
+    
+                                // Get the selected option element
+                                const selectedOption = dropdown.options[dropdown.selectedIndex];
+    
+                                // Get the address from the data attribute
+                                const addressData = selectedOption.getAttribute('data-address');
+    
+                                if (addressData) {
+                                    // 1. Fill the textarea with the address
+                                    addressArea.value = addressData;
+                                    // 2. Trigger the sync to update the preview below
+                                    syncRecipientData();
+                                }
+                            }
+                        </script>
+                    </div>
+                </div>
+            </div>
+
+            <img src="AKM Footer.png" class="report-footer-img" alt="Footer" crossorigin="anonymous">
+        </div>
+
+        <!-- ================= SHEET 2 ================= -->
+        <div class="sheet">
+            <img src="AMK Header.png" class="report-header-img" alt="Header" crossorigin="anonymous">
+            <div class="sheet-content">
+                <div style="margin: 30px 0;">
+                    <p>Ref.: <span class="auto-grow" contenteditable="true" role="textbox" data-placeholder="AMK/BBPLC/2026/..."></span></p>
+                    <p>Date: <input type="date" style="width: 150px; display: inline-block;"></p>
+                </div>
+                <div>
+                    <p><strong id="output-recipient-name"></strong></p>
+                    <p id="output-recipient-address" style="white-space: pre-wrap; margin-top: 0; line-height: 1.4;"></p>
+                </div> 
+                <script>
+                    function syncRecipientData() {
+                        // 1. Get values from the inputs
+                        const recipientName = document.getElementById('select-recipient').value;
+                        const recipientAddress = document.getElementById('input-recipient-address').value;
+
+                        // 2. Target the specific output IDs you have in your HTML
+                        const nameOutput = document.getElementById('output-recipient-name');
+                        const addressOutput = document.getElementById('output-recipient-address');
+
+                        // 3. Update the display
+                        if (nameOutput) {
+                            nameOutput.innerText = recipientName;
+                        }
+                        if (addressOutput) {
+                            addressOutput.innerText = recipientAddress;
+                        }
+                    }
+                </script>
+                
+                <div style="margin: 10px 0;">
+                    <p><strong>Re: Inspection & Valuation Report of used/pre-owned vehicle <span class="auto-grow" contenteditable="true" role="textbox" data-placeholder="Enter name"></span></strong></p>
+                </div>
+                
+                <p>Dear Sir,</p>
+                <p>Greetings from AMK Associates Limited and Thank You very much for referring us!</p>
+                <p style="text-align: justify;">Pursuant to your communication through <span class="auto-grow" contenteditable="true" role="textbox" data-placeholder="Enter medium"></span>, dated: <span class="auto-grow" contenteditable="true" role="textbox" data-placeholder="Enter date"></span> by <span class="auto-grow" contenteditable="true" role="textbox" data-placeholder="Enter name"></span>, we, AMK Associates Limited ("AMK") has conducted the inspection and valuation of the referred vehicle, summary of which is as per following:</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Maximum Price</th>
+                            <th>Assessed Price</th>
+                            <th>Forced Sale Value on Assessed Price (20% Depreciation)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="valuation-table">
+                        <tr>
+                            <th><input type="text" class="max-price" oninput="formatCurrency(this); calculateValuation()" placeholder="0" style="text-align: center;"></th>
+                            <th><input type="text" class="assesesd-price" oninput="formatCurrency(this); calculateValuation()" placeholder="0" style="text-align: center;"></th>
+                            <th><input type="text" class="forced-sale-value" readonly placeholder="0" style="background: #f9f9f9; text-align: center;"></th>
+                        </tr>
+                    </tbody>
+                </table>
+<script>
+// Function to add commas as the user types
+function formatCurrency(input) {
+    // Remove all non-numeric characters except decimals
+    let value = input.value.replace(/[^0-9.]/g, '');
+    
+    if (value) {
+        // Convert to number and back to string with commas
+        let parts = value.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        input.value = parts.join('.');
+    }
+}
+
+// Utility function to get the actual number from a comma-separated string
+function getNumber(val) {
+    if (!val) return 0;
+    // Remove commas before doing math
+    return parseFloat(val.toString().replace(/,/g, '')) || 0;
+}
+function calculateValuation() {
+    // Use getNumber to strip commas before calculating
+    const maxPrice = getNumber(document.querySelector('.max-price').value);
+    const assessedPrice = getNumber(document.querySelector('.assesesd-price').value);
+    
+    // Example: Forced Sale Value is 80% of Assessed Price
+    const fsv = assessedPrice * 0.8;
+
+    // Display the result with commas
+    const fsvField = document.querySelector('.forced-sale-value');
+    fsvField.value = fsv.toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+</script>    
+                
+                <p>As per our understanding, the aforementioned valuation is fair and reasonable and our responsibility is restricted within the physical existence of the used vehicle and the value thereof.</p>
+                <p>The report has been prepared based on our physical inspection, verification, necessary documents as provided by concern office/individual, local market analysis and assessment to the best of our knowledge.</p>
+                <p>For any query, please feel free to contact us.</p>
+                <p>With best regards,</p>
+                
+                <div style="margin: 30px 20px 0;">
+                    <table style="border: none; width: 100%;">
+                        <tr>
+                            <td style="border: none; width: 45%;">
+                                <div style="border-top: 1px solid #000; width: 90%; padding-top: 5px;">
+                                    <p style="font-weight: bold;">
+                                        <select id="select-valuer-1" onchange="updateSignatureDetails(1)" style="font-family: inherit; font-size: inherit; font-weight: bold; border: none; width: 100%; background: transparent; outline: none; appearance: none;">
+                                            <option value="" disabled selected>Select Valuer 1</option>
+                                            <option value="Engr. Abdullah Al Rafi" data-designation="Executive- Inspection, Survey & Valuation">Engr. Abdullah Al Rafi</option>
+                                            <option value="Md Towhid Islam" data-designation="Senior Officer- Inspection, Survey & Valuation">Md Towhid Islam</option>
+                                            <option value="Alif Ahmed" data-designation="Assistant Executive- Inspection, Survey & Valuation">Alif Ahmed</option>
+                                            <option value="MD Junaid Hasan" data-designation="Officer- Inspection, Survey & Valuation">MD Junaid Hasan</option>
+                                            <option value="Utsha Kar Ork" data-designation="Sr. Officer- Inspection, Survey & Valuation">Utsha Kar Ork</option>
+                                            <option value="Sazzadur Rahman" data-designation="Senior Officer- Inspection, Survey & Valuation">Sazzadur Rahman</option>
+                                            <option value="Shahriar Alam" data-designation="Officer- Inspection, Survey & Valuation">Shahriar Alam</option>
+                                            <option value="Md Mesbah Uddin" data-designation="Manager- Inspection, Survey & Valuation">Md Mesbah Uddin</option>
+                                            <option value="Md. Sahed Alam" data-designation="Sr. Officer- Inspection, Survey & Valuation">Md. Sahed Alam</option>
+                                        </select>
+                                    </p>
+                                    <p>
+                                        <input type="text" id="desig-output-1" placeholder="Designation" 
+                                            style="border: none; width: 100%; font-family: inherit;" readonly>
+                                    </p>
+                                </div>
+                            </td>
+
+                            <td style="border: none; width: 10%;"></td>
+
+                            <td style="border: none; width: 45%;">
+                                <div style="border-top: 1px solid #000; width: 90%; padding-top: 5px;">
+                                    <p style="font-weight: bold;">
+                                        <select id="select-valuer-2" onchange="updateSignatureDetails(2)" 
+                                            style="font-family: inherit; font-size: inherit; font-weight: bold; border: none; width: 100%; background: transparent; outline: none; appearance: none;">
+                                            <option value="" disabled selected>Select Valuer 2</option>
+                                            <option value="Engr. Abdullah Al Rafi" data-designation="Executive- Inspection, Survey & Valuation">Engr. Abdullah Al Rafi</option>
+                                            <option value="Md Towhid Islam" data-designation="Senior Officer- Inspection, Survey & Valuation">Md Towhid Islam</option>
+                                            <option value="Alif Ahmed" data-designation="Assistant Executive- Inspection, Survey & Valuation">Alif Ahmed</option>
+                                            <option value="MD Junaid Hasan" data-designation="Officer- Inspection, Survey & Valuation">MD Junaid Hasan</option>
+                                            <option value="Utsha Kar Ork" data-designation="Sr. Officer- Inspection, Survey & Valuation">Utsha Kar Ork</option>
+                                            <option value="Sazzadur Rahman" data-designation="Senior Officer- Inspection, Survey & Valuation">Sazzadur Rahman</option>
+                                            <option value="Shahriar Alam" data-designation="Officer- Inspection, Survey & Valuation">Shahriar Alam</option>
+                                            <option value="Md Mesbah Uddin" data-designation="Manager- Inspection, Survey & Valuation">Md Mesbah Uddin</option>
+                                            <option value="Md. Sahed Alam" data-designation="Sr. Officer- Inspection, Survey & Valuation">Md. Sahed Alam</option>
+                                        </select>
+                                    </p>
+                                    <p>
+                                        <input type="text" id="desig-output-2" placeholder="Designation" 
+                                            style="border: none; width: 100%; font-family: inherit;" readonly>
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <script>
+                    function updateSignatureDetails(num) {
+                        const dropdown = document.getElementById('select-valuer-' + num);
+                        const desigOutput = document.getElementById('desig-output-' + num);
+
+                        if (!dropdown || !desigOutput) return;
+
+                        const selectedOption = dropdown.options[dropdown.selectedIndex];
+                        const designationValue = selectedOption.getAttribute('data-designation');
+
+                        if (designationValue) {
+                            // Fill the designation field for the specific valuer (1 or 2)
+                            desigOutput.value = designationValue;
+
+                            // Ensure the width adjusts if you have the auto-grow script
+                            if (typeof adjustWidth === "function") {
+                                adjustWidth.call(desigOutput);
+                            }
+                        }
+                    }
+                </script>
+
+                
+                <div class="note">
+                        <p><strong>Encl:</strong></p>
+                        <ol style="padding-left: 20px;">
+                            <li>Annexure-I: Detail Report</li>
+                            <li>Annexure-II: Registration Acknowledgement Slip Verification Report</li>
+                            <li>Annexure-III: Photograph of Vehicle</li>
+                            <li>Annexure-IV: QR Code for Video of Vehicle</li>
+                        </ol>
+                </div>
+            </div>
+
+            <img src="AKM Footer.png" class="report-footer-img" alt="Footer" crossorigin="anonymous">
+        </div>
+
+        <!-- ================= SHEET 3 ================= -->
+        <div class="sheet">
+            <img src="AMK Header.png" class="report-header-img" alt="Header" crossorigin="anonymous">
+            
+            <div class="sheet-content">
+                <h2>Vehicle Details</h2>
+                
+                <table>
+                    <tr>
+                        <th style="width: 30%;">Manufacturing Company</th>
+                        <td style="width: 10px;">:</td>
+                        <td><input type="text" class="check-match" data-pair="Manufacturer" placeholder="Manufacturing company"></td>
+                    </tr>
+                    <tr>
+                        <th>Trim/Package</th>
+                        <td>:</td>
+                        <td><input type="text" placeholder="X/L/G etc."></td>
+                    </tr>
+                    <tr>
+                        <th>Vehicle Model</th>
+                        <td>:</td>
+                        <td><input type="text" placeholder="Year"></td>
+                    </tr>
+                    <tr>
+                        <th>Country of Origin</th>
+                        <td>:</td>
+                        <td><input type="text" class="check-match" data-pair="Country of Origin" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th>Engine Number</th>
+                        <td>:</td>
+                        <td><input type="text" class="check-match" data-pair="Engine Number" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th>Chassis Number</th>
+                        <td>:</td>
+                        <td><input type="text" class="check-match" data-pair="Chassis Number" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th>Manufacturing Year</th>
+                        <td>:</td>
+                        <td><input type="text" class="check-match" data-pair="Manufacturing Year" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th>Cubic Capacity (CC)</th>
+                        <td>:</td>
+                        <td><input type="text" class="check-match" data-pair="Cubic Capacity (CC)" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th>Color</th>
+                        <td>:</td>
+                        <td><input type="text"  class="check-match" data-pair="Color" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Type of vehicle</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <select>
+                                <option></option>
+                                <option >Convention</option>
+                                <option>Hybrid</option>
+                                <option>Electric</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Fuel used</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group five-cols">
+                                <span class="check-item" onclick="toggleMulti(this)">
+                                    <span class="square"></span> Octane
+                                </span>
+                                <span class="check-item" onclick="toggleMulti(this)">
+                                    <span class="square"></span> Diesel
+                                </span>
+                                <span class="check-item" onclick="toggleMulti(this)">
+                                    <span class="square"></span> CNG
+                                </span>
+                                <span class="check-item" onclick="toggleMulti(this)">
+                                    <span class="square"></span> LPG
+                                </span>
+                                <span class="check-item" onclick="toggleMulti(this)">
+                                    <span class="square"></span> Hybrid
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <div style="height: 20px;"></div>
+                <h2>Registration Details</h2>
+                <table>
+                    <tr>
+                        <th style="width: 30%;">Current Owner Name</th>
+                        <td style="width: 10px;">:</td>
+                        <td><input type="text" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th>Registration Number</th>
+                        <td>:</td>
+                        <td><input type="text" class="check-match" data-pair="Registration Number" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th>Registration ID</th>
+                        <td>:</td>
+                        <td><input type="text" class="check-match" data-pair="Registration Id" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th>Registration Date</th>
+                        <td>:</td>
+                        <td><input type="date" class="check-match" data-pair="Registration Date" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th>Ownership transfer status</th>
+                        <td>:</td>
+                        <td><input type="text" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th>Insurance Policy Number & Date</th>
+                        <td>:</td>
+                        <td><input type="text" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th>Tax Clearance Certificate Number</th>
+                        <td>:</td>
+                        <td><input type="text" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th>Tax Clearance up to</th>
+                        <td>:</td>
+                        <td><input type="date" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th>Fitness Certificate Number</th>
+                        <td>:</td>
+                        <td><input type="text" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th>Fitness Validity up to</th>
+                        <td>:</td>
+                        <td><input type="date" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Hire Purchase</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <select>
+                                <option></option>
+                                <option>Yes</option>
+                                <option>No</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <img src="AKM Footer.png" class="report-footer-img" alt="Footer" crossorigin="anonymous">
+        </div>
+
+        <!-- ================= SHEET 4 (Sections A & B) ================= -->
+        <div class="sheet">
+            <img src="AMK Header.png" class="report-header-img" alt="Header" crossorigin="anonymous">
+            
+            <div class="sheet-content">
+                <h2>Vehicle Inspection Details</h2>
+                <table>
+                    <tr><th colspan="2">Interior</th><th>Option/Features</th></tr>
+                    <tr>
+                        <th style="width: 30%;">Transmission (Gear)</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Auto
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Manual
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Ignition (Start)</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Key
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Push
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Power window</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Auto
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Manual
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Power Steering</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Auto
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Manual
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Power Side Mirror</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Auto
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Manual
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Power Door Locks</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Yes
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> No
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Sound System</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Built-in
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Modified
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Wooden Panel</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Yes
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> No
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Leather Interior</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Yes
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> No
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Airbag</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Yes
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> No
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Air Condition</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Good
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Fair
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Moderate
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Poor
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                    <tr>
+                        <th style="width: 30%;">Back Camera</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Yes
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> No
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Ambient Lighting</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Built-in
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Modified
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Additional Accessories</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this); document.getElementById('accessories_detail').style.display='block'">
+                                    <span class="square"></span> Yes
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this); document.getElementById('accessories_detail').style.display='none'">
+                                    <span class="square"></span> No
+                                </span>
+                            </div>
+                            <textarea
+                                id="accessories_detail"
+                                name="accessories_detail"
+                                placeholder="Please describe"
+                                rows="2"
+                                style="width:100%; display:none; margin-top:5px;"
+                                ></textarea>
+                        </td>
+                    </tr> 
+                    <tr>
+                        <th style="width: 30%;">No. of Seats</th>
+                        <td style="width: 10px;">:</td>
+                        <td><input type="text" class="check-match" data-pair="No of Seat" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Total Mileage (as per Dashboard)</th>
+                        <td style="width: 10px;">:</td>
+                        <td><input type="text" placeholder=""></td>
+                    </tr>
+                </table>
+                <div class="note">
+                        <p><strong>Encl:</strong><textarea></textarea></p>
+                </div>
+                <table>
+                    <tr><th colspan="2">Exterior</th><th>Option/Features</th></tr>
+                    <tr>
+                        <th style="width: 30%;">Body Condition</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Good
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Fair
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Moderate
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Poor
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Engine Condition</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Good
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Fair
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Moderate
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Poor
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Tires Condition</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Good
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Fair
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Moderate
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Poor
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Tires Usage Time</th>
+                        <td style="width: 10px;">:</td>
+                        <td><input type="text" placeholder=""></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Paint Condition</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Good
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Fair
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Moderate
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Poor
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">HID lights</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Good
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Fair
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Moderate
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Poor
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Major Defects</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Yes
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> No
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Chassis Repaired</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Yes
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> No
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Alloy Rim</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Built-in
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Modified
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Sun Roof</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Yes
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> No
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Glass</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Original
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Repaired
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Fog Light</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Yes
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> No
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Dimension</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Long
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Hatchback
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Saloon
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> SUV
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Major Accidental History</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this); document.getElementById('accident_detail').style.display='block'">
+                                    <span class="square"></span> Yes
+                                </span>                                
+                                <span class="check-item" onclick="toggleCheck(this); document.getElementById('accident_detail').style.display='none'">
+                                    <span class="square"></span> No
+                                </span>
+                            </div>
+                            <textarea
+                                id="accident_detail"
+                                name="accident_detail"
+                                placeholder="Please describe"
+                                rows="2"
+                                style="width:100%; display:none; margin-top:5px;"
+                                ></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Additional Accessories</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this); document.getElementById('accessories_detail').style.display='block'">
+                                    <span class="square"></span> Yes
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this); document.getElementById('accessories_detail').style.display='none'">
+                                    <span class="square"></span> No
+                                </span>
+                            </div>
+                            <textarea
+                                id="accessories_detail"
+                                name="accessories_detail"
+                                placeholder="Please describe"
+                                rows="2"
+                                style="width:100%; display:none; margin-top:5px;"
+                                ></textarea>
+                        </td>
+                    </tr>  
+                </table>
+            </div>
+
+            <img src="AKM Footer.png" class="report-footer-img" alt="Footer" crossorigin="anonymous">
+        </div>
+
+        <!-- ================= SHEET 5 (Sections C & D) ================= -->
+        <div class="sheet">
+            <img src="AMK Header.png" class="report-header-img" alt="Header" crossorigin="anonymous">
+            
+            <div class="sheet-content">
+                <h2>Overall Assessment</h2>
+                <table>
+                    <tr>
+                        <th style="width: 30%;">Interior Condition</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Good
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Average
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Poor
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Exterior Condition</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group">
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Good
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Average
+                                </span>
+                                <span class="check-item" onclick="toggleCheck(this)">
+                                    <span class="square"></span> Poor
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Any known defaults</th>
+                        <td style="width: 10px;">:</td>
+                        <td>
+                            <div class="checkbox-group two-cols">
+                                <span class="check-item" onclick="toggleCheck(this); document.getElementById('known_default_detail').style.display='block'">
+                                    <span class="square"></span> Yes
+                                </span>                                
+                                <span class="check-item" onclick="toggleCheck(this); document.getElementById('known_default_detail').style.display='none'">
+                                    <span class="square"></span> No
+                                </span>
+                            </div>
+                            
+                            <textarea
+                                id="known_default_detail"
+                                name="known_default_detail"
+                                placeholder="Please describe"
+                                rows="2"
+                                style="width:100%; display:none; margin-top:5px;"
+                                ></textarea>
+                        </td>
+                    </tr>
+                </table>
+                <div style="height: 20px;"></div>
+                <h2>Inspection Particulars</h2>
+                <table>
+                    <tr>
+                        <th style="width: 30%;">Date of Inspection</th>
+                        <td style="width: 10px;">:</td>
+                        <td><input type="date"></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Inspection Time</th>
+                        <td style="width: 10px;">:</td>
+                        <td><input type="time"></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Location</th>
+                        <td style="width: 10px;">:</td>
+                        <td><input type="text"></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Contact person presented</th>
+                        <td style="width: 10px;">:</td>
+                        <td><input type="text"></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Name of Verification Agent</th>
+                        <td style="width: 10px;">:</td>
+                        <td><input type="text"></td>
+                    </tr>
+                </table>
+                <div style="height: 20px;"></div>
+                <h2>Overall Assessment</h2>
+                <ol>
+                    <li><p>The valuation has been performed based on our physical inspection, verification, local market analysis and assessment to the best of our knowledge and all the information provided in this report is based on the vehicle related documents, other necessary documents and information as provided by concern Bank/NBFI/Office/Officials/Vehicle Owner/Borrower/Individual.</p></li>
+                    <li><p>AMK’s responsibility is limited to the valuation of the said vehicle only without considering any legal matter related to the vehicle and documents as well.</li>
+                    <li><p>Except inspection and valuation of the said vehicle, AMK or any of its Official has no interest directly or indirectly, at present or in future in any manner whatsoever in the subject matter of this report.</p></li>
+                    <li><p>In case of Forced Sale Value, the rate is assumed on the basis of the vehicle’s demand, price, marketability and other factors which may have relation to unforeseen or uncontrollable event that drives to sell the vehicle within a short duration.</p></li>
+                    <li><p>This report is not intended to absolve the concerned parties from their contractual obligations.</p></li>
+                    <li><p>The report is duly signed by the authorized signatories of AMK and it contains 13 (Thirteen) pages.</p></li>
+                </ol>      
+            </div>
+
+            <img src="AKM Footer.png" class="report-footer-img" alt="Footer" crossorigin="anonymous">
+        </div>
+
+        <!-- ================= SHEET 6  ================= -->
+        <div class="sheet">
+            <img src="AMK Header.png" class="report-header-img" alt="Header" crossorigin="anonymous">
+            
+            <div class="sheet-content">
+                <h2>Registration Details Report</h2>
+                <table>
+                    <tr>
+                        <th colspan="4">Registration Info</th>
+                        <th>Current Authority</th>
+                        <th colspan="3"><strong><textarea placeholder=""></textarea></strong></th>
+                    </tr>
+                    <tr>
+                        <th>Registration Id</th>
+                        <td><textarea class="check-match" data-pair="Registration Id" placeholder=""></textarea></td>
+                        <th>Registration No</th>
+                        <td><textarea class="check-match" data-pair="Registration Number" placeholder=""></textarea></td>
+                        <th>Previous Registration No</th>
+                        <td><textarea placeholder=""></textarea></td>
+                        <th>Application Status</th>
+                        <th><textarea placeholder=""></textarea></th>
+                    </tr>
+                    <tr>
+                        <th>Registration Date</th>
+                        <td><input type="date" class="check-match" data-pair="Registration Date" placeholder=""></td>
+                        <th>Hire</th>
+                        <td><textarea placeholder=""></textarea></td>
+                        <th>Ownership Type</th>
+                        <td colspan="3"><textarea placeholder=""></textarea></td>
+                    </tr>
+                    <tr>
+                        <th>Hire Purchase</th>
+                        <td><textarea placeholder=""></textarea></td>
+                        <th>Bank Name</th>
+                        <td><textarea placeholder=""></textarea></td>
+                        <th>Bank Address</th>
+                        <td colspan="3"><textarea placeholder=""></textarea></td>
+                    </tr>
+                </table>
+                <div style="height: 20px;"></div>
+                <table>
+                    <tr>
+                        <th colspan="6">Vehicle Info</th>
+                    </tr>
+    
+                    <tr>
+                        <th>Chassis No</th>
+                        <td><input type="text" class="check-match" data-pair="Chassis Number" placeholder=""></td>
+                        <th>Engine No</th>
+                        <td><input type="text" class="check-match" data-pair="Engine Number" placeholder=""></td>
+                        <th>Manufacture Year</th>
+                        <td><input type="text" class="check-match" data-pair="Manufacturing Year" placeholder=""></td>
+                    </tr>
+    
+                    <tr>
+                        <th>Vehicle Class</th>
+                        <td><input type="text" placeholder=""></td>
+                        <th>Vehicle Type</th>
+                        <td><input type="text" placeholder=""></td>
+                        <th>No of Seat</th>
+                        <td><input type="text" class="check-match" data-pair="No of Seat" placeholder=""></td>
+                    </tr>
+    
+                    <tr>
+                        <th>Manufacturer</th>
+                        <td><input type="text" class="check-match" data-pair="Manufacturer" placeholder=""></td>
+                        <th>Maker's Country</th>
+                        <td><input type="text" class="check-match" data-pair="Country of Origin" placeholder=""></td>
+                        <th>Color</th>
+                        <td><input type="text" class="check-match" data-pair="Color" placeholder=""></td>
+                    </tr>
+    
+                    <tr>
+                        <th>Horse Power</th>
+                        <td><input type="text" placeholder=""></td>
+                        <th>RPM</th>
+                        <td><input type="text" placeholder=""></td>
+                        <th>CC</th>
+                        <td><input type="text" class="check-match" data-pair="Cubic Capacity (CC)" placeholder=""></td>
+                    </tr>
+    
+                    <tr>
+                        <th>Unladen Weight</th>
+                        <td><input type="text" placeholder=""></td>
+                        <th>Max Weight</th>
+                        <td><input type="text" placeholder=""></td>
+                        <th>No of Cylinders</th>
+                        <td><input type="text" placeholder=""></td>
+                    </tr>
+    
+                    <tr>
+                        <th>Vehicle Model</th>
+                        <td><input type="text" placeholder=""></td>
+                        <th>Mileage</th>
+                        <td colspan="3"><input type="text" placeholder=""></td>
+                    </tr>
+                </table>
+                <style>
+                    /* THIS PART HIDES THE HINT DURING PRINT/DOWNLOAD */
+                    @media print {
+                        .hint {
+                            display: none !important;
+                        }
+                        .clickable-header {
+                            background-color: transparent !important;
+                            cursor: default;
+                        }
+                    }
+                </style>
+                <div style="height: 20px;"></div>
+                <table id="ownerTable">
+                    <tr>
+                        <th colspan="6" class="clickable-header" onclick="addRow()">
+                            Owner Info 
+                        </th>
+                    </tr>
+                    <tr>
+                        <th>Owner's Name</th>
+                        <td><textarea placeholder=""></textarea></td>
+                        <th>Father's Name</th>
+                        <td><textarea placeholder=""></textarea></td>
+                        <th>Owner's Address</th>
+                        <td><textarea placeholder=""></textarea></td>
+                    </tr>
+                </table>
+                <script>
+                    function addRow() {
+                        var table = document.getElementById("ownerTable");
+                        var row = table.insertRow(-1);
+        
+                        row.innerHTML = `
+                        <th>Owner's Name</th>
+                        <td><textarea placeholder=""></textarea></td>
+                        <th>Father's Name</th>
+                        <td><textarea placeholder=""></textarea></td>
+                        <th>Owner's Address</th>
+                        <td><textarea placeholder=""></textarea></td>
+                        `;
+                    }
+                </script>
+            </div>
+
+            <img src="AKM Footer.png" class="report-footer-img" alt="Footer" crossorigin="anonymous">
+        </div>
+
+        <!-- ================= PHOTO SHEETS ================= -->
+        <!-- Populated via JS -->
+    </div>
+
+    <!-- CONTROL BAR -->
+    <!-- Hidden input for loading a session JSON file -->
+    <input type="file" id="session-loader" accept=".json" style="display:none;" onchange="loadSessionFromFile(event)">
+
+    <div class="control-bar">
+        <button class="btn btn-preview" onclick="togglePreview()" id="btn-preview">
+            <i class="fas fa-eye"></i> Preview
+        </button>
+        <button class="btn btn-edit" onclick="togglePreview()" id="btn-edit">
+            <i class="fas fa-pen"></i> Edit
+        </button>
+        <button class="btn btn-download" onclick="downloadPDF()">
+            <i class="fas fa-file-pdf"></i> Download PDF
+        </button>
+        <button class="btn btn-save-session" onclick="saveSession()" style="background-color:#8e44ad;">
+            <i class="fas fa-save"></i> Save Draft
+        </button>
+        <button class="btn btn-load-session" onclick="document.getElementById('session-loader').click()" style="background-color:#16a085;">
+            <i class="fas fa-folder-open"></i> Load Draft
+        </button>
+        <button class="btn btn-clear" onclick="clearForm()">
+            <i class="fas fa-trash"></i> Clear
+        </button>
+    </div>
+
+    <script>
+        // --- 2. SYNC RECIPIENT INFO ---
+        document.querySelectorAll('.check-match').forEach(input => {
+
+            input.addEventListener('blur', function() {
+
+                const pairName = this.getAttribute('data-pair');
+                // Find both inputs belonging to this specific pair
+                const pairFields = document.querySelectorAll(`.check-match[data-pair="${pairName}"]`);
+        
+                const field1 = pairFields[0];
+                const field2 = pairFields[1];
+
+                // Only compare if both fields have been filled
+                if (field1.value.trim() !== "" && field2.value.trim() !== "") {
+                    if (field1.value.trim() !== field2.value.trim()) {
+                        alert("⚠️ Data Mismatch! The " + pairName + " entries do not match. Please verify.");
+                
+                        // Highlight both in red to show the error
+                        field1.style.backgroundColor = "#ffe6e6";
+                        field2.style.backgroundColor = "#ffe6e6";
+                    } else {
+                        // Clear the red highlight if they match
+                        field1.style.backgroundColor = "";
+                        field2.style.backgroundColor = "";
+                    }
+                }
+            })
+        });
+
+        // --- 3. AUTO LENGTH ADJUSTMENT OF USER INPUT LOGIC ---
+        document.querySelectorAll('.auto-grow').forEach(input => {
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+                document.execCommand("insertHTML", false, text);
+            });
+        });
+       
+        // --- 4. YES-NO CONDITIONAL TEXT BOX EXPANSION LOGIC ---
+        document.addEventListener("change", function (e) {
+            if (e.target.classList.contains("yes-no-select")) {
+                const targetId = e.target.getAttribute("data-target");
+                const textarea = document.getElementById(targetId);
+                if (!textarea) return;
+                if (e.target.value === "yes") {
+                    textarea.style.display = "block";
+                    textarea.required = true;
+                } else {
+                    textarea.style.display = "none";
+                    textarea.required = false;
+                    textarea.value = "";
+                }
+            }
+        });
+
+        // --- 5. PHOTO MANAGEMENT LOGIC ---
+        let uploadedPhotos = [];   // Annexure III
+        let annexure4Photos = [];  // Annexure IV
+        let showA3Placeholder = false; 
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            refreshAllAnnexures();
+        });
+        /* Main Orchestrator: Ensures Annexure III is always rendered before IV */
+        function refreshAllAnnexures() {
+            const wrapper = document.getElementById('report-content');
+            
+            // Remove all dynamic sheets
+            document.querySelectorAll('.photo-sheet-dynamic').forEach(el => el.remove());
+            renderAnnexure3(wrapper);
+            renderAnnexure4(wrapper);
+        }
+        
+        // --- Event Listeners ---
+        document.getElementById('image-uploader').addEventListener('change', function(event) {
+            handleFiles(Array.from(event.target.files), 'annexure3');
+        });
+        
+        document.getElementById('image-uploader-4').addEventListener('change', function(event) {
+            handleFiles(Array.from(event.target.files).slice(0, 1), 'annexure4');
+        });
+        
+        function handleFiles(files, target) {
+            if (files.length === 0) return;
+            let processed = 0;
+            
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const photoObj = {
+                        src: e.target.result,
+                        title: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")
+                    };
+                    if (target === 'annexure3') {
+                        uploadedPhotos.push(photoObj);
+                        showA3Placeholder = false; 
+                    } else {
+                        annexure4Photos = [photoObj]; 
+                    }
+            
+                    processed++;
+                    if (processed === files.length) refreshAllAnnexures();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // Trigger placeholder when the header is clicked
+        window.toggleA3Placeholder = function() {
+            showA3Placeholder = !showA3Placeholder;
+            refreshAllAnnexures();
+        };
+        
+        window.deletePhoto = function(index, target) {
+            if (target === 'annexure3') uploadedPhotos.splice(index, 1);
+            else annexure4Photos.splice(index, 1);
+            refreshAllAnnexures();
+        };
+        
+        window.updatePhotoTitle = function(index, newTitle, target) {
+            if (target === 'annexure3') uploadedPhotos[index].title = newTitle;
+            else annexure4Photos[index].title = newTitle;
+        };
+        
+        // --- Annexure III Renderer --
+        function renderAnnexure3(wrapper) {
+            const items = [...uploadedPhotos];
+            if (showA3Placeholder) items.push({ isPlaceholder: true });
+
+            // Calculate sheets (minimum 1 sheet so the header is always visible to click)
+            const totalSheets = Math.max(1, Math.ceil(items.length / 2));
+
+            for (let i = 0; i < totalSheets; i++) {
+                // Create base sheet with clickable header logic
+                const sheet = createBaseSheet(i, 'Annexure-III: Photograph of Vehicle', 'sheet-annexure3', true);
+                const container = sheet.querySelector('.photo-container-inner');
+                const start = i * 2;
+                
+                for (let k = start; k < start + 2; k++) {
+                if (k < items.length) {
+                    const item = items[k];
+                    if (item.isPlaceholder) {
+                        container.appendChild(createUploadPlaceholder('image-uploader'));
+                    } else {
+                        container.appendChild(createPhotoSlot(item, k, 'annexure3', false));
+                    }
+                }
+                }
+                wrapper.appendChild(sheet);
+            }
+        }
+        // --- Annexure IV Renderer ---
+        function renderAnnexure4(wrapper) {
+            const sheet = createBaseSheet(0, 'Annexure-IV: QR Code for Video of Vehicle', 'sheet-annexure4', false);
+            const container = sheet.querySelector('.photo-container-inner');
+    
+            const qrWrapper = document.createElement('div');
+            qrWrapper.className = 'qr-special-container';
+
+            if (annexure4Photos.length > 0) {
+                // Render the actual QR Code
+                qrWrapper.appendChild(createPhotoSlot(annexure4Photos[0], 0, 'annexure4', true));
+        
+                // Render the instructions on one line
+                const instructions = document.createElement('div');
+                instructions.className = 'qr-instructions';
+                instructions.innerHTML = `
+                <hr style="width: 100%; margin: 20px 0; opacity: 0.2;">
+                <p><strong>Instructions for use:</strong></p>
+                <ul style="margin-left: 20px; list-style-type: disc;">
+                <li>Download & install any QR code scanner/reader.</li>
+                <li>Scan the attached QR code.</li>
+                <li>Open the link using Google chrome/any browser.</li>
+                </ul>
+                `;
+                qrWrapper.appendChild(instructions);
+            } else {
+                // Render the placeholder specifically for the QR section
+                qrWrapper.appendChild(createUploadPlaceholder('image-uploader-4'));
+            }
+            
+            container.appendChild(qrWrapper);
+            wrapper.appendChild(sheet);
+        }
+        // --- UI Components ---
+        function createBaseSheet(index, title, className, isClickable) {
+            const sheet = document.createElement('div');
+            sheet.className = `sheet photo-sheet-dynamic ${className}`;
+    
+            // If it's Annexure III, add the clickable-header class and onclick event
+            const headerTitle = isClickable && index === 0 
+                ? `<span class="clickable-header" onclick="toggleA3Placeholder()">${title}</span>` 
+                : (index === 0 ? title : title + ' (Contd.)');
+
+            sheet.innerHTML = `
+            <img src="AMK Header.png" class="report-header-img" alt="Header">
+            <div class="sheet-content photo-page-content">
+            <div class="annexure-header">${headerTitle}</div>
+            <div class="photo-container-inner"></div>
+            </div>
+            <img src="AKM Footer.png" class="report-footer-img" alt="Footer">
+            `;
+            return sheet;
+        }
+        function createPhotoSlot(photo, index, target, isQR) {
+            const slot = document.createElement('div');
+            slot.className = 'photo-slot';
+            const frameClass = isQR ? 'photo-frame qr-frame-custom' : 'photo-frame';
+
+            slot.innerHTML = `
+            <div class="${frameClass}">
+            <img src="${photo.src}" alt="Photo">
+            <button type="button" class="delete-photo-btn" onclick="deletePhoto(${index}, '${target}')">
+                <i class="fas fa-times"></i>
+            </button>
+            </div>
+            <input type="text" class="photo-title" value="${photo.title}" 
+               oninput="updatePhotoTitle(${index}, this.value, '${target}')">
+               `;
+            return slot;
+        }
+        function createUploadPlaceholder(uploaderId) {
+            const slot = document.createElement('div');
+            slot.className = 'photo-slot';
+            slot.innerHTML = `
+            <div class="add-photo-placeholder" onclick="document.getElementById('${uploaderId}').click()">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Select File</p>
+            </div>
+            `;
+            return slot;
+        }
+        
+        // --- 3B. EVENT DELEGATION FOR DELETE BUTTON (THE FIX) ---
+        document.addEventListener('click', function(event) {
+            const deleteButton = event.target.closest('.delete-photo-btn');
+            if (deleteButton) {
+                event.stopPropagation();
+                // Get the index from the data attribute
+                const index = parseInt(deleteButton.getAttribute('data-index'));
+                
+                if (!isNaN(index) && index >= 0 && confirm("Delete this photo?")) {
+                    uploadedPhotos.splice(index, 1);
+                    renderPhotoSheets();
+                }
+            }
+        });
+
+
+        // --- 4. PREVIEW MODE ---
+        function togglePreview() {
+            const body = document.body;
+            const btnPreview = document.getElementById('btn-preview');
+            const btnEdit = document.getElementById('btn-edit');
+
+            body.classList.toggle('preview-mode');
+
+            if (body.classList.contains('preview-mode')) {
+                btnPreview.style.display = 'none';
+                btnEdit.style.display = 'flex';
+                window.scrollTo(0, 0);
+            } else {
+                btnPreview.style.display = 'flex';
+                btnEdit.style.display = 'none';
+            }
+        }
+
+        // --- 5. DOWNLOAD PDF ---
+        function downloadPDF() {
+            const element = document.getElementById('report-content');
+            const wrapper = document.querySelector('.report-wrapper');
+            
+            wrapper.classList.add('pdf-mode');
+
+            const inputs = element.querySelectorAll('input, textarea, select');
+            const originalDisplay = [];
+
+            inputs.forEach((input, index) => {
+                originalDisplay[index] = input.style.display;
+                if(input.type === 'file') return;
+
+                const span = document.createElement('span');
+                span.className = 'pdf-text-replacement'; 
+                
+                let value = input.value;
+                if (input.tagName === 'SELECT') {
+                    value = input.options[input.selectedIndex].text;
+                    if (value === 'Select type') value = '';
+                }
+                if (!value) value = '\u00A0'; 
+                
+                span.textContent = value;
+                const style = window.getComputedStyle(input);
+                
+                span.style.fontFamily = style.fontFamily;
+                span.style.fontSize = style.fontSize;
+                span.style.fontWeight = style.fontWeight;
+                span.style.textAlign = style.textAlign;
+                span.style.display = 'inline-block';
+                span.style.whiteSpace = 'pre-wrap';
+
+                if(input.classList.contains('photo-title')) {
+                     span.style.width = '100%';
+                     span.style.display = 'block';
+                     span.style.textAlign = 'center';
+                } else {
+                    span.style.width = input.scrollWidth + 'px';  
+                }
+        
+                input.style.display = 'none';
+                input.parentNode.insertBefore(span, input);
+            });
+
+            // 2. PDF Configuration
+            const opt = {
+                margin:       0, 
+                filename:     'Car Valuation Report.pdf',
+                image:        { type: 'jpeg', quality: 1.0 }, // Set quality to maximum
+                html2canvas:  { 
+                    scale: 3,        // Increased from 2 to 3 for sharpness
+                    useCORS: true, 
+                    scrollY: 0,
+                    letterRendering: true, // Improves text spacing
+                    logging: false
+                },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: 'css' } 
+            };
+
+            html2pdf().set(opt).from(element).save().then(function() {
+                wrapper.classList.remove('pdf-mode');
+                const replacements = element.querySelectorAll('.pdf-text-replacement');
+                replacements.forEach(span => span.remove());
+                inputs.forEach((input, index) => {
+                    input.style.display = originalDisplay[index];
+                });
+            });
+        }
+        
+        // --- 6. CLEAR FORM ---
+        function clearForm() {
+            if(confirm("Are you sure you want to clear all data? This includes uploaded photos.")) {
+                const inputs = document.querySelectorAll("input:not([type=file]), textarea, select");
+                inputs.forEach(input => input.value = "");
+                document.getElementById('output-recipient-name').innerText = "";
+                document.getElementById('output-recipient-address').innerText = "";
+                uploadedPhotos = [];
+                renderPhotoSheets();
+            }
+        }
+
+        //--------- CHECK BOX LOGIC ----------//
+        // Use this for multiple choice rows 
+        function toggleMulti(element) {
+            element.classList.toggle('checked');
+        }
+
+         // Use this for Single choice rows
+        function toggleCheck(element) {
+            // Toggle the 'checked' class on the clicked item
+            element.classList.toggle('checked');
+        }
+        function toggleCheck(element) {
+            // Find all items in the same row/group
+            const parent = element.parentElement;
+            const items = parent.querySelectorAll('.check-item');
+            // Remove check from others
+            items.forEach(item => {
+                if (item !== element) item.classList.remove('checked');
+            });
+    
+            // Toggle the clicked one
+            element.classList.toggle('checked');
+        }
+        // --- 7. SAVE SESSION (Export JSON) ---
+        function saveSession() {
+            const session = {};
+
+            // (A) Standard inputs, textareas, selects — identified by index
+            const fields = document.querySelectorAll("input:not([type=file]):not([type=button]), textarea, select");
+            session.fields = [];
+            fields.forEach((el, i) => {
+                // Give each element a stable key: prefer id, else use positional index
+                session.fields.push({
+                    index: i,
+                    id: el.id || null,
+                    tag: el.tagName,
+                    type: el.type || null,
+                    value: el.value
+                });
+            });
+
+            // (B) Contenteditable spans (.auto-grow) — save their text content
+            const editableSpans = document.querySelectorAll('.auto-grow[contenteditable="true"]');
+            session.editableSpans = [];
+            editableSpans.forEach((span, i) => {
+                session.editableSpans.push({ index: i, text: span.innerText });
+            });
+
+            // (C) Checkbox / check-item states — save which items have .checked class
+            const checkItems = document.querySelectorAll('.check-item');
+            session.checkItems = [];
+            checkItems.forEach((item, i) => {
+                session.checkItems.push({ index: i, checked: item.classList.contains('checked') });
+            });
+
+            // (D) Uploaded photos — save as base64 src + title
+            session.uploadedPhotos = uploadedPhotos.map(p => ({ src: p.src, title: p.title }));
+
+            // (E) A4 annexure photos (uploadedPhotosA4 if it exists)
+            if (typeof uploadedPhotosA4 !== 'undefined') {
+                session.uploadedPhotosA4 = uploadedPhotosA4.map(p => ({ src: p.src, title: p.title }));
+            }
+
+            // Serialize and trigger download
+            const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            // Use file reference number (if filled) as part of filename
+            const refInput = document.querySelectorAll("input[type=text]")[1];
+            const refVal = refInput && refInput.value ? refInput.value.replace(/[^a-zA-Z0-9_-]/g, '_') : 'draft';
+            a.download = `CarReport_${refVal}_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // --- 8. LOAD SESSION (Import JSON) ---
+        function loadSessionFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const session = JSON.parse(e.target.result);
+
+                    // (A) Restore standard inputs
+                    if (session.fields) {
+                        const fields = document.querySelectorAll("input:not([type=file]):not([type=button]), textarea, select");
+                        session.fields.forEach(saved => {
+                            const el = fields[saved.index];
+                            if (!el) return;
+                            el.value = saved.value;
+                            // Fire change/input events so dependent logic (sync, calculate) re-runs
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                        });
+                    }
+
+                    // (B) Restore contenteditable spans
+                    if (session.editableSpans) {
+                        const spans = document.querySelectorAll('.auto-grow[contenteditable="true"]');
+                        session.editableSpans.forEach(saved => {
+                            const span = spans[saved.index];
+                            if (span) span.innerText = saved.text;
+                        });
+                    }
+
+                    // (C) Restore checkbox states
+                    if (session.checkItems) {
+                        const checkItems = document.querySelectorAll('.check-item');
+                        session.checkItems.forEach(saved => {
+                            const item = checkItems[saved.index];
+                            if (!item) return;
+                            if (saved.checked) {
+                                item.classList.add('checked');
+                            } else {
+                                item.classList.remove('checked');
+                            }
+                        });
+                    }
+
+                    // (D) Restore main photos
+                    if (session.uploadedPhotos) {
+                        uploadedPhotos = session.uploadedPhotos.map(p => ({ src: p.src, title: p.title }));
+                        if (typeof renderPhotoSheets === 'function') renderPhotoSheets();
+                    }
+
+                    // (E) Restore annexure photos if applicable
+                    if (session.uploadedPhotosA4 && typeof uploadedPhotosA4 !== 'undefined') {
+                        uploadedPhotosA4 = session.uploadedPhotosA4.map(p => ({ src: p.src, title: p.title }));
+                        if (typeof renderPhotoSheetsA4 === 'function') renderPhotoSheetsA4();
+                    }
+
+                    // Re-run dependent display functions
+                    if (typeof syncRecipientData === 'function') syncRecipientData();
+                    if (typeof calculateValuation === 'function') calculateValuation();
+
+                    alert('✅ Draft loaded successfully!');
+                } catch (err) {
+                    alert('❌ Failed to load session: invalid file.\n' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            // Reset so the same file can be re-loaded if needed
+            event.target.value = '';
+        }
+
+        //_________WEBHOOK____________
+        async function submitReport(data) {
+            const res = await fetch(
+                "https://amkadvisory.app.n8n.cloud/webhook/report-input",
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                }
+            );
+
+            if (!res.ok) {
+                alert("Submission failed");
+            } else {
+
+                alert("Report data saved successfully");
+            }
+        }
+        //____________________________
+    </script>
+
+
+    aEt4EHGXNdqZDxkCqP8KHL
+    b49148a3e48b3d5af778c34f91552f3d57213d4f
+
+    async function getKoboData() {
+  // We point this to an n8n "Webhook" node that is set to GET
+  const response = await fetch("https://amkadvisory.app.n8n.cloud/webhook/get-kobo-data");
+  const reportData = await response.json();
+
+  // This part would "fill up" yo
